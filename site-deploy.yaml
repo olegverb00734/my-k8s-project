@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-site
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: my-site
+  template:
+    metadata:
+      labels:
+        app: my-site
+    spec:
+      containers:
+      - name: web
+        image: localhost:5000/my-website:v1
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        # 1. Монтируем HTML из ConfigMap
+        - name: html-volume
+          mountPath: /usr/share/nginx/html
+        # 2. Монтируем секрет как файл
+        - name: secret-volume
+          mountPath: /etc/secrets
+          readOnly: true
+      volumes:
+      # 1. Том для HTML
+      - name: html-volume
+        configMap:
+          name: my-site-html
+      # 2. Том для секрета
+      - name: secret-volume
+        secret:
+          secretName: my-db-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-site-svc
+spec:
+  selector:
+    app: my-site
+  ports:
+    - port: 80
+      targetPort: 80
